@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Play, RotateCcw, Flag, Timer, Sparkles, Users } from 'lucide-react';
+import { Play, RotateCcw, Flag, Timer, Sparkles, Users, Tv, Eye, ZoomIn } from 'lucide-react';
 import type { Participant, RaceWinner, CameraMode, RaceState, RacerProgress, OutcomeMode } from './types/race';
 import { CHARACTER_COLORS, HEADBAND_COLORS, pickRandomWinnerIndex } from './utils/random';
 import { buildRaceTrajectories } from './utils/raceEngine';
@@ -62,7 +62,9 @@ export const App: React.FC = () => {
     return saved === 'loser' ? 'loser' : 'winner';
   });
 
-  const [cameraMode, setCameraMode] = useState<CameraMode>('follow-leaders');
+  // Default cameraMode to 'show-all' so all participants are 100% visible on screen!
+  const [cameraMode, setCameraMode] = useState<CameraMode>('show-all');
+  const [isTheaterMode, setIsTheaterMode] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.getMuted());
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
@@ -210,7 +212,7 @@ export const App: React.FC = () => {
     const chosenTarget = participants[pickedIdx];
     setWinnerId(chosenTarget.id);
 
-    // 2. Build race trajectories for the active mode
+    // 2. Build race trajectories for active mode
     const trajs = buildRaceTrajectories(participants, chosenTarget.id, outcomeMode);
     setTrajectories(trajs);
 
@@ -308,7 +310,7 @@ export const App: React.FC = () => {
     }, 150);
   };
 
-  // Action: Eliminate Winner & Continue next round
+  // Action: Eliminate Winner / Loser & Continue next round
   const handleEliminateAndContinue = () => {
     if (!currentWinner) return;
 
@@ -341,6 +343,8 @@ export const App: React.FC = () => {
         onToggleMute={toggleMute}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
+        isTheaterMode={isTheaterMode}
+        onToggleTheaterMode={() => setIsTheaterMode(!isTheaterMode)}
         winnerCount={history.length}
       />
 
@@ -350,45 +354,47 @@ export const App: React.FC = () => {
         <div className="lg:hidden p-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-300 text-xs flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-orange-400 shrink-0" />
-            <span>Mode Layar Penuh direkomendasikan saat presentasi proyektor!</span>
+            <span>Semua peserta otomatis dimuat di layar tanpa terpotong!</span>
           </div>
           <button
-            onClick={toggleFullscreen}
+            onClick={() => setIsTheaterMode(!isTheaterMode)}
             className="px-2.5 py-1 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 text-xs font-semibold shrink-0"
           >
-            Layar Penuh
+            {isTheaterMode ? 'Tata Letak Normal' : 'Mode Teater'}
           </button>
         </div>
 
-        {/* 3-Column Responsive Dashboard Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* LEFT COLUMN: Input & Settings (3 cols) */}
-          <div className="lg:col-span-3 flex flex-col gap-5 order-2 lg:order-1">
-            <ParticipantInput
-              names={names}
-              onChange={setNames}
-              disabled={raceState === 'racing' || raceState === 'countdown'}
-            />
+        {/* Dynamic Responsive Dashboard Layout (Standard 3-Column vs Theater Wide) */}
+        <div className={`grid gap-5 items-start ${isTheaterMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-12'}`}>
+          {/* LEFT COLUMN (Only in Standard mode): Input & Settings */}
+          {!isTheaterMode && (
+            <div className="lg:col-span-3 flex flex-col gap-5 order-2 lg:order-1">
+              <ParticipantInput
+                names={names}
+                onChange={setNames}
+                disabled={raceState === 'racing' || raceState === 'countdown'}
+              />
 
-            <SettingsPanel
-              duration={duration}
-              onDurationChange={setDuration}
-              eliminateWinner={eliminateWinner}
-              onEliminateWinnerChange={setEliminateWinner}
-              cameraMode={cameraMode}
-              onCameraModeChange={setCameraMode}
-              outcomeMode={outcomeMode}
-              onOutcomeModeChange={setOutcomeMode}
-              disabled={raceState === 'racing' || raceState === 'countdown'}
-            />
-          </div>
+              <SettingsPanel
+                duration={duration}
+                onDurationChange={setDuration}
+                eliminateWinner={eliminateWinner}
+                onEliminateWinnerChange={setEliminateWinner}
+                cameraMode={cameraMode}
+                onCameraModeChange={setCameraMode}
+                outcomeMode={outcomeMode}
+                onOutcomeModeChange={setOutcomeMode}
+                disabled={raceState === 'racing' || raceState === 'countdown'}
+              />
+            </div>
+          )}
 
-          {/* CENTER COLUMN: Race Arena Canvas & Controls (6 cols) */}
+          {/* MAIN ARENA COLUMN: 12 cols in Theater, 6 cols in Standard */}
           <div
             ref={arenaContainerRef}
-            className={`lg:col-span-6 flex flex-col gap-4 order-1 lg:order-2 ${
-              isFullscreen ? 'fixed inset-0 z-50 bg-slate-950 p-4' : ''
-            }`}
+            className={`flex flex-col gap-3.5 ${
+              isTheaterMode ? 'col-span-1' : 'lg:col-span-6 order-1 lg:order-2'
+            } ${isFullscreen ? 'fixed inset-0 z-50 bg-slate-950 p-4' : ''}`}
           >
             {/* Arena Top Toolbar / Stopwatch Bar */}
             <div className="glass-panel rounded-2xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-3 shadow-lg border border-slate-800">
@@ -424,8 +430,44 @@ export const App: React.FC = () => {
                 </span>
               </div>
 
-              {/* Quick Arena Buttons */}
+              {/* Quick View Controls & Start Button */}
               <div className="flex items-center gap-2">
+                {/* View Mode Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setCameraMode(cameraMode === 'show-all' ? 'follow-leaders' : 'show-all')}
+                  className="py-2 px-2.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-all"
+                  title={cameraMode === 'show-all' ? 'Sedang Muat Semua (Klik untuk Zoom)' : 'Sedang Zoom (Klik untuk Muat Semua)'}
+                >
+                  {cameraMode === 'show-all' ? (
+                    <>
+                      <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="hidden sm:inline">Muat Semua ({participants.length})</span>
+                    </>
+                  ) : (
+                    <>
+                      <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="hidden sm:inline">Zoom Pemimpin</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Theater Mode Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsTheaterMode(!isTheaterMode)}
+                  className={`py-2 px-2.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all ${
+                    isTheaterMode
+                      ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
+                      : 'bg-slate-800/90 hover:bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                  }`}
+                  title={isTheaterMode ? 'Kembali ke Tata Letak Standar' : 'Perluas Arena (Mode Teater)'}
+                >
+                  <Tv className="w-3.5 h-3.5" />
+                  <span className="hidden md:inline">{isTheaterMode ? 'Kecilkan' : 'Perluas'}</span>
+                </button>
+
+                {/* Start / Reset Button */}
                 {raceState === 'idle' || raceState === 'finished' ? (
                   <button
                     onClick={handleStartRace}
@@ -453,8 +495,14 @@ export const App: React.FC = () => {
               </div>
             </div>
 
-            {/* 2D CANVAS ARENA CONTAINER */}
-            <div className="relative w-full aspect-[4/3] sm:aspect-[16/10] max-h-[640px] rounded-2xl overflow-hidden shadow-2xl border border-slate-700/60 bg-slate-900">
+            {/* 2D CANVAS ARENA CONTAINER (Taller & Adaptive Height so ALL racers fit perfectly) */}
+            <div
+              className={`relative w-full rounded-2xl overflow-hidden shadow-2xl border border-slate-700/60 bg-slate-900 transition-all duration-300 ${
+                isTheaterMode
+                  ? 'h-[640px] sm:h-[720px] lg:h-[780px] xl:h-[820px]'
+                  : 'h-[520px] sm:h-[600px] lg:h-[660px]'
+              }`}
+            >
               <RaceCanvas
                 participants={participants}
                 trajectories={trajectories}
@@ -493,24 +541,62 @@ export const App: React.FC = () => {
             <div className="flex items-center justify-between text-[11px] text-slate-400 px-2">
               <div className="flex items-center gap-1.5">
                 <Flag className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Pemenang ditentukan 100% acak adil via Web Crypto</span>
+                <span>
+                  {cameraMode === 'show-all'
+                    ? `Mode Muat Semua: Seluruh ${participants.length} karung langsung terlihat di layar`
+                    : `Mode Zoom: Mengikuti rombongan terdepan`}
+                </span>
               </div>
-              <span>{participants.length} Karung di Arena</span>
+              <span className="font-semibold text-slate-300">
+                {participants.length} Karung di Arena
+              </span>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Live Leaderboard & Winner History (3 cols) */}
-          <div className="lg:col-span-3 flex flex-col gap-5 order-3">
-            <Leaderboard progressList={liveProgress} />
-            <WinnerHistory
-              history={history}
-              onClearHistory={handleClearHistory}
-            />
-          </div>
+          {/* RIGHT COLUMN (Only in Standard mode): Leaderboard & History */}
+          {!isTheaterMode && (
+            <div className="lg:col-span-3 flex flex-col gap-5 order-3">
+              <Leaderboard progressList={liveProgress} />
+              <WinnerHistory
+                history={history}
+                onClearHistory={handleClearHistory}
+              />
+            </div>
+          )}
+
+          {/* THEATER MODE WRAPPER: Panels displayed neatly below the wide arena */}
+          {isTheaterMode && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
+              <ParticipantInput
+                names={names}
+                onChange={setNames}
+                disabled={raceState === 'racing' || raceState === 'countdown'}
+              />
+
+              <SettingsPanel
+                duration={duration}
+                onDurationChange={setDuration}
+                eliminateWinner={eliminateWinner}
+                onEliminateWinnerChange={setEliminateWinner}
+                cameraMode={cameraMode}
+                onCameraModeChange={setCameraMode}
+                outcomeMode={outcomeMode}
+                onOutcomeModeChange={setOutcomeMode}
+                disabled={raceState === 'racing' || raceState === 'countdown'}
+              />
+
+              <Leaderboard progressList={liveProgress} />
+
+              <WinnerHistory
+                history={history}
+                onClearHistory={handleClearHistory}
+              />
+            </div>
+          )}
         </div>
       </main>
 
-      {/* WINNER POPUP MODAL */}
+      {/* WINNER / LOSER POPUP MODAL */}
       <WinnerModal
         winner={showWinnerModal ? currentWinner : null}
         onClose={() => setShowWinnerModal(false)}

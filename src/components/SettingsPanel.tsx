@@ -201,40 +201,46 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           />
         </label>
 
-        {/* Camera Focus Toggle */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1 rounded-md bg-blue-500/10 text-blue-400">
-              <Video className="w-3.5 h-3.5" />
+        {/* Camera / Tampilan Arena Switcher */}
+        <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-800/80">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded-md bg-blue-500/10 text-blue-400">
+                <Video className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-200">Tampilan Arena</p>
+                <p className="text-[10px] text-slate-400">
+                  {cameraMode === 'show-all' ? 'Semua peserta muat di layar' : 'Kamera zoom ikuti pemimpin'}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-200">Kamera Arena</p>
-              <p className="text-[11px] text-slate-400">Ikuti peserta terdepan</p>
+            <div className="flex bg-slate-950/80 p-0.5 rounded-lg border border-slate-800 text-[11px] shrink-0">
+              <button
+                type="button"
+                onClick={() => onCameraModeChange('show-all')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  cameraMode === 'show-all'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Semua peserta terlihat langsung di layar tanpa scroll"
+              >
+                Muat Semua
+              </button>
+              <button
+                type="button"
+                onClick={() => onCameraModeChange('follow-leaders')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  cameraMode === 'follow-leaders'
+                    ? 'bg-orange-500 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+                title="Karakter diperbesar dan kamera mengikuti pemimpin"
+              >
+                Zoom
+              </button>
             </div>
-          </div>
-          <div className="flex bg-slate-950/80 p-0.5 rounded-lg border border-slate-800 text-[11px]">
-            <button
-              type="button"
-              onClick={() => onCameraModeChange('follow-leaders')}
-              className={`px-2 py-1 rounded-md font-medium transition-all ${
-                cameraMode === 'follow-leaders'
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Fokus
-            </button>
-            <button
-              type="button"
-              onClick={() => onCameraModeChange('show-all')}
-              className={`px-2 py-1 rounded-md font-medium transition-all ${
-                cameraMode === 'show-all'
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Semua
-            </button>
           </div>
         </div>
       </div>

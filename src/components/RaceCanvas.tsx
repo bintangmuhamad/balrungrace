@@ -140,13 +140,22 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
       ctx.scale(dpr, dpr);
 
       // Track layout configuration
-      const laneH = getLaneHeight(totalRacers);
-      const topPadding = 50; // sky / header banner
-      const bottomPadding = 40;
+      const topPadding = Math.min(50, Math.max(30, viewportHeight * 0.08));
+      const bottomPadding = Math.min(36, Math.max(22, viewportHeight * 0.06));
+      const availableH = viewportHeight - topPadding - bottomPadding;
+
+      let laneH: number;
+      if (currCamMode === 'show-all') {
+        // AUTO-FIT: dynamically scale lane height so 100% of participants fit on screen!
+        laneH = Math.max(14, Math.min(70, availableH / totalRacers));
+      } else {
+        // FOLLOW-LEADERS (Zoom mode): larger comfortable lanes with camera tracking
+        laneH = Math.max(38, Math.min(72, availableH / Math.min(totalRacers, 7)));
+      }
       const totalTrackHeight = topPadding + totalRacers * laneH + bottomPadding;
 
-      const startLineX = Math.max(90, viewportWidth * 0.12);
-      const finishLineX = Math.min(viewportWidth - 70, viewportWidth * 0.90);
+      const startLineX = Math.max(80, viewportWidth * 0.12);
+      const finishLineX = Math.min(viewportWidth - 65, viewportWidth * 0.90);
       const trackDistance = finishLineX - startLineX;
 
       // Calculate racer positions
@@ -545,30 +554,32 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
 
         ctx.restore();
 
-        // NAME & RANK BADGE (Placed cleanly beside/above character)
+        // NAME & RANK BADGE (Placed cleanly vertically centered in racer lane)
         ctx.save();
-        const badgeY = racerBaseY - 26 * charScale - r.hopY * charScale;
-        const badgeX = racerX + 22 * charScale;
+        const badgeY = topPadding + r.lane * laneH + laneH / 2;
+        const badgeX = racerX + 20 * charScale;
 
-        // Truncate name if long
-        const displayName = r.name.length > 15 ? r.name.substring(0, 13) + '…' : r.name;
+        // Truncate name according to lane compactness
+        const maxNameLen = laneH < 22 ? 8 : laneH < 32 ? 12 : 16;
+        const displayName = r.name.length > maxNameLen ? r.name.substring(0, maxNameLen - 1) + '…' : r.name;
         const isWinnerTarget = currOutcomeMode === 'winner' && r.currentRank === 1;
         const isLoserTarget = currOutcomeMode === 'loser' && r.currentRank === totalRacers;
-        const rankText = isLoserTarget ? '💀 Terakhir' : `#${r.currentRank}`;
+        const rankText = isLoserTarget ? '💀' : `#${r.currentRank}`;
 
-        ctx.font = `600 ${Math.max(10, Math.min(13, laneH * 0.35))}px Outfit, sans-serif`;
+        const fontSize = Math.max(8.5, Math.min(12, laneH * 0.45));
+        ctx.font = `600 ${fontSize}px Outfit, sans-serif`;
         const textMetrics = ctx.measureText(`${displayName} ${rankText}`);
-        const badgeW = textMetrics.width + 16;
-        const badgeH = Math.max(18, Math.min(24, laneH * 0.55));
+        const badgeW = textMetrics.width + 12;
+        const badgeH = Math.max(12, Math.min(22, laneH * 0.78));
 
         // Badge pill background
         ctx.fillStyle = isWinnerTarget
           ? 'rgba(234, 179, 8, 0.95)'
           : isLoserTarget
           ? 'rgba(239, 68, 68, 0.95)'
-          : 'rgba(15, 23, 42, 0.85)';
+          : 'rgba(15, 23, 42, 0.82)';
         ctx.beginPath();
-        ctx.roundRect(badgeX, badgeY - badgeH / 2, badgeW, badgeH, 6);
+        ctx.roundRect(badgeX, badgeY - badgeH / 2, badgeW, badgeH, Math.min(6, badgeH / 2));
         ctx.fill();
         ctx.strokeStyle = isWinnerTarget
           ? '#ca8a04'
@@ -582,12 +593,12 @@ export const RaceCanvas: React.FC<RaceCanvasProps> = ({
         ctx.fillStyle = isWinnerTarget ? '#451a03' : isLoserTarget ? '#ffffff' : '#f8fafc';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(displayName, badgeX + 7, badgeY);
+        ctx.fillText(displayName, badgeX + 5, badgeY);
 
         ctx.fillStyle = isWinnerTarget ? '#854d0e' : isLoserTarget ? '#fecaca' : '#94a3b8';
-        ctx.font = `bold ${Math.max(9, Math.min(11, laneH * 0.3))}px Outfit, sans-serif`;
+        ctx.font = `bold ${Math.max(8, Math.min(10.5, laneH * 0.40))}px Outfit, sans-serif`;
         ctx.textAlign = 'right';
-        ctx.fillText(rankText, badgeX + badgeW - 6, badgeY);
+        ctx.fillText(rankText, badgeX + badgeW - 5, badgeY);
 
         ctx.restore();
       });

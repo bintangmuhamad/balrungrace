@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Maximize2, Minimize2, Trophy } from 'lucide-react';
+import { Volume2, VolumeX, Maximize2, Minimize2, Trophy, Tv } from 'lucide-react';
 import { soundEngine } from '../utils/soundEngine';
 
 interface HeaderProps {
@@ -7,6 +7,8 @@ interface HeaderProps {
   onToggleMute: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  isTheaterMode: boolean;
+  onToggleTheaterMode: () => void;
   winnerCount: number;
 }
 
@@ -15,6 +17,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleMute,
   isFullscreen,
   onToggleFullscreen,
+  isTheaterMode,
+  onToggleTheaterMode,
   winnerCount,
 }) => {
   return (
@@ -47,6 +51,20 @@ export const Header: React.FC<HeaderProps> = ({
             <span>{winnerCount} Ronde Selesai</span>
           </div>
         )}
+
+        {/* Theater Mode Toggle */}
+        <button
+          onClick={onToggleTheaterMode}
+          title={isTheaterMode ? 'Kembali ke Tata Letak Standar' : 'Mode Teater (Arena Lebar & Luas)'}
+          className={`p-2.5 rounded-xl border transition-all duration-200 flex items-center gap-1.5 text-xs font-medium ${
+            isTheaterMode
+              ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 shadow-sm'
+              : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700/60'
+          }`}
+        >
+          <Tv className="w-4 h-4" />
+          <span className="hidden sm:inline">{isTheaterMode ? 'Teater Aktif' : 'Mode Teater'}</span>
+        </button>
 
         {/* Audio Mute Button */}
         <button
